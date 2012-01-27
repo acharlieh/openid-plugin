@@ -46,7 +46,11 @@ public class UserInfoExtension extends OpenIdExtension {
         // extend some user information
         // see http://code.google.com/apis/accounts/docs/OpenID.html
         FetchRequest fetch = FetchRequest.createFetchRequest();
-        fetch.addAttribute("email", "http://schema.openid.net/contact/email", true);
+        // AX is standardized, but OPs support multiple different Email parameters.
+        // see http://blog.nerdbank.net/2009/03/how-to-pretty-much-guarantee-that-you.html
+        fetch.addAttribute("email", "http://axschema.org/contact/email", true);
+        fetch.addAttribute("email2", "http://schema.openid.net/contact/email", true);
+        fetch.addAttribute("email3", "http://openid.net/schema/contact/email", true);
         fetch.addAttribute("firstName", "http://axschema.org/namePerson/first", true);
         fetch.addAttribute("lastName", "http://axschema.org/namePerson/last", true);
         fetch.addAttribute("ff", "http://axschema.org/namePerson", false);
@@ -78,6 +82,10 @@ public class UserInfoExtension extends OpenIdExtension {
                 }
                 if (email==null)
                     email = fr.getAttributeValue("email");
+                if (email==null)
+                    email = fr.getAttributeValue("email2");
+                if (email==null)
+                    email = fr.getAttributeValue("email3");
             }
         } catch (MessageException e) {
             // if the process doesn't contain AX information, ignore. Maybe this is a bug in openid4java?
