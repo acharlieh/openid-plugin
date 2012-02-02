@@ -23,11 +23,17 @@
  */
 package hudson.plugins.openid;
 
+import static org.acegisecurity.ui.rememberme.TokenBasedRememberMeServices.ACEGI_SECURITY_HASHED_REMEMBER_ME_COOKIE_KEY;
 import com.cloudbees.openid4java.team.TeamExtensionFactory;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.model.User;
 import hudson.security.SecurityRealm;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpSession;
+
 import org.acegisecurity.Authentication;
 import org.acegisecurity.AuthenticationException;
 import org.acegisecurity.AuthenticationManager;
@@ -41,6 +47,7 @@ import org.kohsuke.stapler.Header;
 import org.kohsuke.stapler.HttpRedirect;
 import org.kohsuke.stapler.HttpResponse;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerResponse;
 import org.openid4java.OpenIDException;
 import org.openid4java.consumer.ConsumerException;
 import org.openid4java.consumer.ConsumerManager;
@@ -157,6 +164,25 @@ public class OpenIdSsoSecurityRealm extends SecurityRealm {
      */
     public HttpResponse doFinishLogin(StaplerRequest request) throws IOException, OpenIDException {
         return OpenIdSession.getCurrent().doFinishLogin(request);
+    }
+
+    /**
+     * Handles the logout processing and returns an check image.
+     */
+    public void doLogoutImage(final StaplerRequest req, final StaplerResponse rsp) throws IOException, ServletException {
+        final HttpSession session = req.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+        final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        SecurityContextHolder.clearContext();
+
+        // reset remember-me cookie
+        final Cookie cookie = new Cookie(ACEGI_SECURITY_HASHED_REMEMBER_ME_COOKIE_KEY, "");
+        cookie.setPath(req.getContextPath().length() > 0 ? req.getContextPath() : "/");
+        rsp.addCookie(cookie);
+
+        rsp.serveFile(req, getClass().getResource("/check.gif"));
     }
 
     @Extension
